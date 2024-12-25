@@ -10,12 +10,43 @@ import {
   Settings, 
   Bell, 
   Clock,
-  Scissors
+  Scissors,
+  Link,
+  Image,
+  Palette,
+  Copy
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const { toast } = useToast();
+  const [customization, setCustomization] = useState({
+    logo: "",
+    banner: "",
+    primaryColor: "#9b87f5",
+    buttonColor: "#F97316"
+  });
+
+  const bookingPageUrl = `${window.location.origin}/booking/${123}`; // 123 é um exemplo de ID da barbearia
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(bookingPageUrl);
+    toast({
+      title: "Link copiado!",
+      description: "O link da sua página de agendamento foi copiado para a área de transferência.",
+    });
+  };
+
+  const handleCustomizationChange = (field: string, value: string) => {
+    setCustomization(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-barber-light to-white">
@@ -72,9 +103,10 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="agenda" className="space-y-4">
-          <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+          <TabsList className="grid w-full max-w-[600px] grid-cols-3">
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
+            <TabsTrigger value="personalizacao">Personalização</TabsTrigger>
           </TabsList>
 
           <TabsContent value="agenda" className="space-y-4">
@@ -147,6 +179,115 @@ const Dashboard = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="personalizacao">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Personalização da Página de Agendamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="logo">Logo da Barbearia</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="logo"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleCustomizationChange('logo', e.target.value)}
+                          className="cursor-pointer"
+                        />
+                        <Image className="w-5 h-5 text-gray-500" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="banner">Banner da Página</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="banner"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleCustomizationChange('banner', e.target.value)}
+                          className="cursor-pointer"
+                        />
+                        <Image className="w-5 h-5 text-gray-500" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="primaryColor">Cor Principal</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="primaryColor"
+                          type="color"
+                          value={customization.primaryColor}
+                          onChange={(e) => handleCustomizationChange('primaryColor', e.target.value)}
+                          className="w-full h-10 cursor-pointer"
+                        />
+                        <Palette className="w-5 h-5 text-gray-500" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="buttonColor">Cor dos Botões</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="buttonColor"
+                          type="color"
+                          value={customization.buttonColor}
+                          onChange={(e) => handleCustomizationChange('buttonColor', e.target.value)}
+                          className="w-full h-10 cursor-pointer"
+                        />
+                        <Palette className="w-5 h-5 text-gray-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Card className="bg-gray-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Link className="w-5 h-5" />
+                          Link da Página de Agendamento
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={bookingPageUrl}
+                            readOnly
+                            className="bg-white"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleCopyLink}
+                            className="shrink-0"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Compartilhe este link com seus clientes para que eles possam fazer agendamentos online.
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Button 
+                      className="w-full bg-gradient-to-r from-barber-primary to-barber-primary/90 hover:from-barber-primary/90 hover:to-barber-primary text-white"
+                    >
+                      Salvar Alterações
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
