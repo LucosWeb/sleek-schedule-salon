@@ -7,6 +7,7 @@ import { ElementOrderControl } from "./controls/ElementOrderControl";
 import { StyleControls } from "./controls/StyleControls";
 import { ShareControl } from "./controls/ShareControl";
 import { ElementOrder } from "./types/customization";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CustomizationTabProps {
   customization: {
@@ -20,6 +21,7 @@ interface CustomizationTabProps {
 }
 
 export const CustomizationTab = ({ customization, setCustomization }: CustomizationTabProps) => {
+  const { toast } = useToast();
   const bookingPageUrl = `${window.location.origin}/booking/${123}`;
   const [elementOrder, setElementOrder] = useState<ElementOrder[]>([
     { id: "title", label: "Título" },
@@ -44,6 +46,19 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
     items.splice(result.destination.index, 0, reorderedItem);
 
     setElementOrder(items);
+  };
+
+  const handleSave = () => {
+    // Aqui você implementaria a lógica para salvar no backend
+    localStorage.setItem('bookingPageCustomization', JSON.stringify({
+      customization,
+      elementOrder
+    }));
+    
+    toast({
+      title: "Alterações salvas com sucesso!",
+      description: "Suas personalizações foram aplicadas à página de agendamento.",
+    });
   };
 
   return (
@@ -71,6 +86,7 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
           <ShareControl bookingPageUrl={bookingPageUrl} />
           
           <Button 
+            onClick={handleSave}
             className="w-full bg-gradient-to-r from-barber-primary to-barber-primary/90 hover:from-barber-primary/90 hover:to-barber-primary text-white"
           >
             Salvar Alterações
@@ -82,7 +98,7 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
       <div className="col-span-8">
         <Card>
           <CardHeader className="border-b">
-            <CardTitle>Preview da Página</CardTitle>
+            <CardTitle>Visualização da Página</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <PreviewPanel 
