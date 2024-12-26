@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ElementOrder } from "../types/customization";
+import { Servico } from "../PrecosTab";
 
 interface PreviewPanelProps {
   customization: {
@@ -13,6 +14,8 @@ interface PreviewPanelProps {
 }
 
 export const PreviewPanel = ({ customization, elementOrder }: PreviewPanelProps) => {
+  const servicos = JSON.parse(localStorage.getItem('servicos') || '[]') as Servico[];
+
   return (
     <div className="w-full h-[calc(100vh-12rem)] overflow-auto bg-gray-100 rounded-lg shadow-inner">
       <div className="bg-white p-6 min-h-full" style={{
@@ -36,14 +39,15 @@ export const PreviewPanel = ({ customization, elementOrder }: PreviewPanelProps)
             )}
             {element.id === 'services' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="font-semibold">Corte de Cabelo</h3>
-                  <p className="text-gray-600">30 min - R$ 50</p>
-                </div>
-                <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="font-semibold">Barba</h3>
-                  <p className="text-gray-600">20 min - R$ 35</p>
-                </div>
+                {servicos.map((servico) => (
+                  <div key={servico.id} className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold">{servico.nome}</h3>
+                    <p className="text-gray-600">{servico.duracao} min - R$ {servico.preco}</p>
+                    {servico.descricao && (
+                      <p className="text-sm text-gray-500 mt-1">{servico.descricao}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
             {element.id === 'calendar' && (
