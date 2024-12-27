@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link as LinkIcon } from "lucide-react";
@@ -23,7 +23,7 @@ interface CustomizationTabProps {
 export const CustomizationTab = ({ customization, setCustomization }: CustomizationTabProps) => {
   const { toast } = useToast();
   const userId = localStorage.getItem('userId') || '123';
-  const bookingPageUrl = `${window.location.origin}/booking/${userId}`;
+  const [bookingPageUrl, setBookingPageUrl] = useState(`${window.location.origin}/booking/${userId}`);
   
   const [elementOrder, setElementOrder] = useState<ElementOrder[]>([
     { id: "title", label: "Título" },
@@ -32,6 +32,15 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
     { id: "services", label: "Serviços" },
     { id: "calendar", label: "Calendário" }
   ]);
+
+  useEffect(() => {
+    // Load saved customizations when component mounts
+    const savedCustomization = localStorage.getItem(`bookingPageCustomization_${userId}`);
+    if (savedCustomization) {
+      const { elementOrder: savedElementOrder } = JSON.parse(savedCustomization);
+      setElementOrder(savedElementOrder);
+    }
+  }, [userId]);
 
   const handleCustomizationChange = (field: string, value: string) => {
     setCustomization((prev: any) => ({
@@ -51,10 +60,15 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
   };
 
   const handleSave = () => {
-    localStorage.setItem(`bookingPageCustomization_${userId}`, JSON.stringify({
+    const customizationData = {
       customization,
       elementOrder
-    }));
+    };
+    
+    localStorage.setItem(`bookingPageCustomization_${userId}`, JSON.stringify(customizationData));
+    
+    // Force update the booking page URL to trigger a re-render
+    setBookingPageUrl(`${window.location.origin}/booking/${userId}?update=${Date.now()}`);
     
     toast({
       title: "Alterações salvas com sucesso!",

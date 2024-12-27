@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Clock, Scissors, Calendar as CalendarIcon } from "lucide-react";
 
 const timeSlots = [
@@ -18,6 +18,7 @@ const timeSlots = [
 
 const BookingPage = () => {
   const { shopId } = useParams();
+  const location = useLocation();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedService, setSelectedService] = useState<string>("");
@@ -38,7 +39,7 @@ const BookingPage = () => {
   const [services, setServices] = useState<any[]>([]);
 
   useEffect(() => {
-    // Carrega as personalizações do localStorage usando o shopId
+    // Load customizations whenever the URL changes (including query params)
     const savedCustomization = localStorage.getItem(`bookingPageCustomization_${shopId}`);
     if (savedCustomization) {
       const { customization: savedCustomizationData, elementOrder: savedElementOrder } = JSON.parse(savedCustomization);
@@ -46,12 +47,11 @@ const BookingPage = () => {
       setElementOrder(savedElementOrder);
     }
 
-    // Carrega os serviços do localStorage
     const savedServices = localStorage.getItem('servicos');
     if (savedServices) {
       setServices(JSON.parse(savedServices));
     }
-  }, [shopId]);
+  }, [shopId, location.search]); // Add location.search to dependencies
 
   const renderElement = (elementId: string) => {
     switch (elementId) {
