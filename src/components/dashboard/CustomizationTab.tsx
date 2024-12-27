@@ -37,16 +37,25 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
     // Load saved customizations when component mounts
     const savedCustomization = localStorage.getItem(`bookingPageCustomization_${userId}`);
     if (savedCustomization) {
-      const { elementOrder: savedElementOrder } = JSON.parse(savedCustomization);
+      const { elementOrder: savedElementOrder, customization: savedCustomizationData } = JSON.parse(savedCustomization);
       setElementOrder(savedElementOrder);
+      setCustomization(savedCustomizationData);
     }
-  }, [userId]);
+  }, [userId, setCustomization]);
 
   const handleCustomizationChange = (field: string, value: string) => {
-    setCustomization((prev: any) => ({
-      ...prev,
+    const newCustomization = {
+      ...customization,
       [field]: value
-    }));
+    };
+    setCustomization(newCustomization);
+    
+    // Save immediately when a change is made
+    const customizationData = {
+      customization: newCustomization,
+      elementOrder
+    };
+    localStorage.setItem(`bookingPageCustomization_${userId}`, JSON.stringify(customizationData));
   };
 
   const onDragEnd = (result: any) => {
