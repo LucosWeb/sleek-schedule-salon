@@ -22,7 +22,6 @@ interface CustomizationTabProps {
 
 export const CustomizationTab = ({ customization, setCustomization }: CustomizationTabProps) => {
   const { toast } = useToast();
-  // Pega o ID do usuário do localStorage ou usa um valor padrão
   const userId = localStorage.getItem('userId') || '123';
   const bookingPageUrl = `${window.location.origin}/booking/${userId}`;
   
@@ -52,7 +51,6 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
   };
 
   const handleSave = () => {
-    // Salva as personalizações no localStorage com o ID do usuário
     localStorage.setItem(`bookingPageCustomization_${userId}`, JSON.stringify({
       customization,
       elementOrder
@@ -66,7 +64,6 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
 
   return (
     <div className="grid grid-cols-12 gap-6 h-[calc(100vh-12rem)]">
-      {/* Painel de Controles - Estilo Elementor */}
       <div className="col-span-4 bg-white rounded-lg shadow-lg overflow-auto">
         <div className="p-4 border-b sticky top-0 bg-white z-10">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -97,7 +94,6 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
         </div>
       </div>
 
-      {/* Preview em Tempo Real */}
       <div className="col-span-8">
         <Card>
           <CardHeader className="border-b">
