@@ -22,7 +22,10 @@ interface CustomizationTabProps {
 
 export const CustomizationTab = ({ customization, setCustomization }: CustomizationTabProps) => {
   const { toast } = useToast();
-  const bookingPageUrl = `${window.location.origin}/booking/${123}`;
+  // Pega o ID do usuário do localStorage ou usa um valor padrão
+  const userId = localStorage.getItem('userId') || '123';
+  const bookingPageUrl = `${window.location.origin}/booking/${userId}`;
+  
   const [elementOrder, setElementOrder] = useState<ElementOrder[]>([
     { id: "title", label: "Título" },
     { id: "logo", label: "Logo" },
@@ -49,8 +52,8 @@ export const CustomizationTab = ({ customization, setCustomization }: Customizat
   };
 
   const handleSave = () => {
-    // Aqui você implementaria a lógica para salvar no backend
-    localStorage.setItem('bookingPageCustomization', JSON.stringify({
+    // Salva as personalizações no localStorage com o ID do usuário
+    localStorage.setItem(`bookingPageCustomization_${userId}`, JSON.stringify({
       customization,
       elementOrder
     }));

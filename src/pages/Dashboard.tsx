@@ -7,8 +7,7 @@ import {
   DollarSign, 
   Settings, 
   Bell, 
-  Scissors,
-  PriceTag
+  Scissors
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatsCard } from "@/components/dashboard/StatsCard";
