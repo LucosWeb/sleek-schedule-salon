@@ -16,13 +16,6 @@ const timeSlots = [
   "16:00",
 ];
 
-const services = [
-  { id: 1, name: "Corte de Cabelo", duration: "30 min", price: "R$ 30" },
-  { id: 2, name: "Barba", duration: "15 min", price: "R$ 20" },
-  { id: 3, name: "Cabelo + Barba", duration: "45 min", price: "R$ 45" },
-  { id: 4, name: "Penteado", duration: "20 min", price: "R$ 25" },
-];
-
 const BookingPage = () => {
   const { shopId } = useParams();
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -42,15 +35,23 @@ const BookingPage = () => {
     { id: "services", label: "Serviços" },
     { id: "calendar", label: "Calendário" }
   ]);
+  const [services, setServices] = useState<any[]>([]);
 
   useEffect(() => {
-    const savedCustomization = localStorage.getItem('bookingPageCustomization');
+    // Carrega as personalizações do localStorage usando o shopId
+    const savedCustomization = localStorage.getItem(`bookingPageCustomization_${shopId}`);
     if (savedCustomization) {
       const { customization: savedCustomizationData, elementOrder: savedElementOrder } = JSON.parse(savedCustomization);
       setCustomization(savedCustomizationData);
       setElementOrder(savedElementOrder);
     }
-  }, []);
+
+    // Carrega os serviços do localStorage
+    const savedServices = localStorage.getItem('servicos');
+    if (savedServices) {
+      setServices(JSON.parse(savedServices));
+    }
+  }, [shopId]);
 
   const renderElement = (elementId: string) => {
     switch (elementId) {
@@ -89,9 +90,9 @@ const BookingPage = () => {
                   {services.map((service) => (
                     <SelectItem key={service.id} value={service.id.toString()}>
                       <div className="flex justify-between items-center w-full">
-                        <span>{service.name}</span>
+                        <span>{service.nome}</span>
                         <span className="text-gray-500 text-sm">
-                          {service.duration} - {service.price}
+                          {service.duracao} min - R$ {service.preco}
                         </span>
                       </div>
                     </SelectItem>
