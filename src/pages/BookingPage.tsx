@@ -4,16 +4,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useParams, useLocation } from "react-router-dom";
-import { Clock, Scissors, Calendar as CalendarIcon } from "lucide-react";
+import { Clock, Scissors, Calendar as CalendarIcon, User } from "lucide-react";
+import { toast } from "sonner";
 
-const timeSlots = [
-  "09:00",
-  "10:00",
-  "11:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
+interface Barbeiro {
+  id: string;
+  nome: string;
+  diasDisponiveis: string[];
+  horarios: string[];
+}
+
+const diasSemana = [
+  "Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"
 ];
 
 const BookingPage = () => {
@@ -22,6 +24,8 @@ const BookingPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedBarbeiro, setSelectedBarbeiro] = useState<string>("");
+  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [customization, setCustomization] = useState({
     logo: "",
     banner: "",
@@ -39,7 +43,6 @@ const BookingPage = () => {
   const [services, setServices] = useState<any[]>([]);
 
   useEffect(() => {
-    // Load customizations whenever the URL changes (including query params)
     const savedCustomization = localStorage.getItem(`bookingPageCustomization_${shopId}`);
     if (savedCustomization) {
       const { customization: savedCustomizationData, elementOrder: savedElementOrder } = JSON.parse(savedCustomization);
@@ -51,7 +54,33 @@ const BookingPage = () => {
     if (savedServices) {
       setServices(JSON.parse(savedServices));
     }
-  }, [shopId, location.search]); // Add location.search to dependencies
+
+    const savedBarbeiros = localStorage.getItem('barbeiros');
+    if (savedBarbeiros) {
+      setBarbeiros(JSON.parse(savedBarbeiros));
+    }
+  }, [shopId, location.search]);
+
+  const getBarbeiroHorariosDisponiveis = () => {
+    if (!selectedBarbeiro || !date) return [];
+    
+    const barbeiro = barbeiros.find(b => b.id === selectedBarbeiro);
+    if (!barbeiro) return [];
+
+    const diaSemana = diasSemana[date.getDay()];
+    if (!barbeiro.diasDisponiveis.includes(diaSemana)) return [];
+
+    return barbeiro.horarios;
+  };
+
+  const handleSubmit = () => {
+    if (!date || !selectedTime || !selectedService || !selectedBarbeiro) {
+      toast.error("Por favor, preencha todos os campos");
+      return;
+    }
+
+    toast.success("Agendamento realizado com sucesso!");
+  };
 
   const renderElement = (elementId: string) => {
     switch (elementId) {
@@ -104,40 +133,73 @@ const BookingPage = () => {
         );
       case 'calendar':
         return (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5" />
-                Selecione Data e Hora
-              </CardTitle>
-              <CardDescription>Escolha seu horário preferido</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                {timeSlots.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    className={`${
-                      selectedTime === time 
-                        ? "bg-barber-primary text-white" 
-                        : "hover:bg-barber-primary/10"
-                    }`}
-                    onClick={() => setSelectedTime(time)}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Selecione o Barbeiro
+                </CardTitle>
+                <CardDescription>Escolha o profissional de sua preferência</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select value={selectedBarbeiro} onValueChange={setSelectedBarbeiro}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um barbeiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {barbeiros.map((barbeiro) => (
+                      <SelectItem key={barbeiro.id} value={barbeiro.id}>
+                        {barbeiro.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5" />
+                  Selecione Data e Hora
+                </CardTitle>
+                <CardDescription>Escolha seu horário preferido</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  className="rounded-md border"
+                  disabled={(date) => {
+                    if (!selectedBarbeiro) return true;
+                    const barbeiro = barbeiros.find(b => b.id === selectedBarbeiro);
+                    if (!barbeiro) return true;
+                    const diaSemana = diasSemana[date.getDay()];
+                    return !barbeiro.diasDisponiveis.includes(diaSemana);
+                  }}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  {getBarbeiroHorariosDisponiveis().map((horario) => (
+                    <Button
+                      key={horario}
+                      variant={selectedTime === horario ? "default" : "outline"}
+                      className={`${
+                        selectedTime === horario 
+                          ? "bg-barber-primary text-white" 
+                          : "hover:bg-barber-primary/10"
+                      }`}
+                      onClick={() => setSelectedTime(horario)}
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      {horario}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
         );
       default:
         return null;
@@ -156,7 +218,8 @@ const BookingPage = () => {
 
           <Button
             className="w-full bg-gradient-to-r from-barber-primary to-barber-primary/90 hover:from-barber-primary/90 hover:to-barber-primary text-white"
-            disabled={!date || !selectedTime || !selectedService}
+            disabled={!date || !selectedTime || !selectedService || !selectedBarbeiro}
+            onClick={handleSubmit}
             style={{ backgroundColor: customization.buttonColor }}
           >
             Confirmar Agendamento

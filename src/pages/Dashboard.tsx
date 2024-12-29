@@ -15,6 +15,7 @@ import { AgendaTab } from "@/components/dashboard/AgendaTab";
 import { ClientsTab } from "@/components/dashboard/ClientsTab";
 import { CustomizationTab } from "@/components/dashboard/CustomizationTab";
 import { PrecosTab } from "@/components/dashboard/PrecosTab";
+import { BarbeirosTab } from "@/components/dashboard/BarbeirosTab";
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -81,10 +82,11 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="agenda" className="space-y-4">
-          <TabsList className="grid w-full max-w-[800px] grid-cols-4">
+          <TabsList className="grid w-full max-w-[800px] grid-cols-5">
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
             <TabsTrigger value="precos">Tabela de Preços</TabsTrigger>
+            <TabsTrigger value="barbeiros">Barbeiros</TabsTrigger>
             <TabsTrigger value="personalizacao">Personalização</TabsTrigger>
           </TabsList>
 
@@ -98,6 +100,10 @@ const Dashboard = () => {
 
           <TabsContent value="precos">
             <PrecosTab />
+          </TabsContent>
+
+          <TabsContent value="barbeiros">
+            <BarbeirosTab />
           </TabsContent>
 
           <TabsContent value="personalizacao">
