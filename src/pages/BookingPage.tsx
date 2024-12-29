@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { AppointmentForm } from "@/components/booking/AppointmentForm";
+import { AuthForm } from "@/components/auth/AuthForm";
+import { MyAppointments } from "@/components/booking/MyAppointments";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const BookingPage = () => {
   const { shopId } = useParams();
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [customization, setCustomization] = useState({
     logo: "",
     banner: "",
@@ -27,7 +31,14 @@ const BookingPage = () => {
       setCustomization(savedCustomizationData);
       setElementOrder(savedElementOrder);
     }
+
+    const currentUser = localStorage.getItem('currentUser');
+    setIsAuthenticated(!!currentUser);
   }, [shopId, location.search]);
+
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+  };
 
   const renderElement = (elementId: string) => {
     switch (elementId) {
@@ -62,7 +73,33 @@ const BookingPage = () => {
             </div>
           ))}
           
-          <AppointmentForm customization={customization} />
+          {!isAuthenticated ? (
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Cadastro</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login">
+                <AuthForm mode="login" onSuccess={handleAuthSuccess} />
+              </TabsContent>
+              <TabsContent value="register">
+                <AuthForm mode="register" onSuccess={handleAuthSuccess} />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <Tabs defaultValue="new" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="new">Novo Agendamento</TabsTrigger>
+                <TabsTrigger value="my">Meus Agendamentos</TabsTrigger>
+              </TabsList>
+              <TabsContent value="new">
+                <AppointmentForm customization={customization} />
+              </TabsContent>
+              <TabsContent value="my">
+                <MyAppointments />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
     </div>

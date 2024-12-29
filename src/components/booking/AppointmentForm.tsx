@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,7 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
   const [selectedService, setSelectedService] = useState<string>("");
   const [selectedBarbeiro, setSelectedBarbeiro] = useState<string>("");
   const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [barbeiros] = useState<Barbeiro[]>(() => {
     const saved = localStorage.getItem('barbeiros');
     return saved ? JSON.parse(saved) : [];
@@ -33,6 +34,14 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
     const saved = localStorage.getItem('servicos');
     return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUser) {
+      setClientName(currentUser.name);
+      setClientEmail(currentUser.email);
+    }
+  }, []);
 
   const getBarbeiroHorariosDisponiveis = () => {
     if (!selectedBarbeiro || !date) return [];
@@ -61,7 +70,8 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
       selectedService,
       selectedBarbeiro,
       date,
-      selectedTime
+      selectedTime,
+      clientEmail
     );
 
     toast.success("Agendamento realizado com sucesso!");
@@ -69,7 +79,6 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
     // Limpa o formulário
     setSelectedTime("");
     setSelectedService("");
-    setClientName("");
   };
 
   return (
@@ -80,14 +89,23 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
             <User className="w-5 h-5" />
             Seus Dados
           </CardTitle>
-          <CardDescription>Informe seu nome para o agendamento</CardDescription>
+          <CardDescription>Seus dados de cadastro</CardDescription>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder="Seu nome completo"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-          />
+          <div className="space-y-4">
+            <Input
+              placeholder="Seu nome completo"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              disabled
+            />
+            <Input
+              type="email"
+              placeholder="Seu email"
+              value={clientEmail}
+              disabled
+            />
+          </div>
         </CardContent>
       </Card>
 

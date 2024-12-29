@@ -50,18 +50,21 @@ export const createAppointment = (
   service: string,
   barberId: string,
   date: Date,
-  time: string
+  time: string,
+  clientEmail: string
 ): void => {
   const [hours] = time.split(':');
   const appointmentDate = new Date(date);
   appointmentDate.setHours(parseInt(hours), 0, 0, 0);
 
-  const newAppointment: Appointment = {
+  const newAppointment = {
     id: Date.now().toString(),
     clientName,
+    clientEmail,
     service,
     barberId,
     date: appointmentDate,
+    time,
     status: 'Pendente'
   };
 
