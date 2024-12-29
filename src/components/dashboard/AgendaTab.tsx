@@ -1,50 +1,52 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Clock, Users, Search } from "lucide-react";
+import { Clock, Users, Search, CheckCircle2, XCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Appointment } from "@/types/appointment";
+import { toast } from "sonner";
 
 interface AgendaTabProps {
   date: Date | undefined;
   setDate: (date: Date | undefined) => void;
 }
 
-// Dados mockados para exemplo
-const mockAppointments = [
-  {
-    id: 1,
-    clientName: "João Silva",
-    service: "Corte + Barba",
-    date: new Date(2024, 2, 15, 14, 0),
-    status: "Confirmado",
-  },
-  {
-    id: 2,
-    clientName: "Maria Oliveira",
-    service: "Corte Feminino",
-    date: new Date(2024, 2, 15, 15, 30),
-    status: "Pendente",
-  },
-  {
-    id: 3,
-    clientName: "Pedro Santos",
-    service: "Barba",
-    date: new Date(2024, 2, 16, 10, 0),
-    status: "Confirmado",
-  },
-];
-
 export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   
-  const filteredAppointments = mockAppointments.filter(appointment => {
-    const matchesSearch = appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.service.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDate = !date || format(appointment.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+  useEffect(() => {
+    const savedAppointments = localStorage.getItem('appointments');
+    if (savedAppointments) {
+      const parsed = JSON.parse(savedAppointments);
+      // Convert string dates back to Date objects
+      setAppointments(parsed.map((app: any) => ({
+        ...app,
+        date: new Date(app.date)
+      })));
+    }
+  }, []);
+
+  const updateAppointmentStatus = (appointmentId: string, newStatus: 'Confirmado' | 'Cancelado') => {
+    const updatedAppointments = appointments.map(app => {
+      if (app.id === appointmentId) {
+        return { ...app, status: newStatus };
+      }
+      return app;
+    });
     
+    setAppointments(updatedAppointments);
+    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+    toast.success(`Agendamento ${newStatus.toLowerCase()} com sucesso!`);
+  };
+  
+  const filteredAppointments = appointments.filter(appointment => {
+    const matchesSearch = appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDate = !date || format(appointment.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
     return matchesSearch && matchesDate;
   });
 
@@ -81,7 +83,7 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
               <div className="flex items-center space-x-2">
                 <Search className="w-5 h-5 text-gray-500" />
                 <Input
-                  placeholder="Buscar por cliente ou serviço..."
+                  placeholder="Buscar por cliente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1"
@@ -102,9 +104,11 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
               <TableRow>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Serviço</TableHead>
+                <TableHead>Barbeiro</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Horário</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -112,6 +116,12 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
                 <TableRow key={appointment.id}>
                   <TableCell>{appointment.clientName}</TableCell>
                   <TableCell>{appointment.service}</TableCell>
+                  <TableCell>
+                    {localStorage.getItem('barbeiros') ? 
+                      JSON.parse(localStorage.getItem('barbeiros') || '[]')
+                        .find((b: any) => b.id === appointment.barberId)?.nome 
+                      : 'N/A'}
+                  </TableCell>
                   <TableCell>
                     {format(appointment.date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </TableCell>
@@ -121,11 +131,37 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-sm ${
                       appointment.status === "Confirmado" 
-                        ? "bg-green-100 text-green-800" 
+                        ? "bg-green-100 text-green-800"
+                        : appointment.status === "Cancelado"
+                        ? "bg-red-100 text-red-800" 
                         : "bg-yellow-100 text-yellow-800"
                     }`}>
                       {appointment.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {appointment.status === "Pendente" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => updateAppointmentStatus(appointment.id, 'Confirmado')}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => updateAppointmentStatus(appointment.id, 'Cancelado')}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
