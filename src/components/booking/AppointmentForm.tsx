@@ -59,8 +59,19 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
     return getAvailableTimeSlots(date, selectedBarbeiro, horariosTrabalho);
   };
 
+  const isFormValid = () => {
+    return (
+      date && 
+      selectedTime && 
+      selectedService && 
+      selectedBarbeiro && 
+      clientName && 
+      clientEmail
+    );
+  };
+
   const handleSubmit = () => {
-    if (!date || !selectedTime || !selectedService || !selectedBarbeiro || !clientName) {
+    if (!isFormValid()) {
       toast.error("Por favor, preencha todos os campos");
       return;
     }
@@ -206,7 +217,7 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
 
       <Button
         className="w-full bg-gradient-to-r from-barber-primary to-barber-primary/90 hover:from-barber-primary/90 hover:to-barber-primary text-white"
-        disabled={!date || !selectedTime || !selectedService || !selectedBarbeiro || !clientName}
+        disabled={!isFormValid()}
         onClick={handleSubmit}
         style={{ backgroundColor: customization.buttonColor }}
       >
