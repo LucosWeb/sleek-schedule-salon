@@ -6,20 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Users, Plus, Trash2, Clock } from "lucide-react";
-import { TimeRange } from "./types/barber";
-
-interface Barbeiro {
-  id: string;
-  nome: string;
-  diasDisponiveis: string[];
-  horarios: TimeRange[];
-}
-
-interface TimeRange {
-  inicio: string;
-  fim: string;
-  tipo: 'trabalho' | 'almoco';
-}
+import { TimeRange, Barbeiro } from "./types/barber";
 
 export const BarbeirosTab = () => {
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>(() => {
