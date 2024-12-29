@@ -7,13 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Clock, Scissors, Calendar as CalendarIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import { getAvailableTimeSlots, createAppointment } from "@/utils/appointments";
-
-interface Barbeiro {
-  id: string;
-  nome: string;
-  diasDisponiveis: string[];
-  horarios: string[];
-}
+import { Barbeiro } from "@/components/dashboard/types/barber";
 
 interface AppointmentFormProps {
   customization: {
@@ -49,7 +43,11 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
     const diaSemana = diasSemana[date.getDay()];
     if (!barbeiro.diasDisponiveis.includes(diaSemana)) return [];
 
-    return getAvailableTimeSlots(date, selectedBarbeiro, barbeiro.horarios);
+    const horariosTrabalho = barbeiro.horarios
+      .filter(h => h.tipo === 'trabalho')
+      .map(h => ({inicio: h.inicio, fim: h.fim}));
+
+    return getAvailableTimeSlots(date, selectedBarbeiro, horariosTrabalho);
   };
 
   const handleSubmit = () => {

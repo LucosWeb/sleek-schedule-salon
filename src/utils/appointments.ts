@@ -1,9 +1,14 @@
 import { Appointment } from "@/types/appointment";
 
+interface TimeRange {
+  inicio: string;
+  fim: string;
+}
+
 export const getAvailableTimeSlots = (
   selectedDate: Date,
   barberId: string,
-  selectedBarberHorarios: string[]
+  horariosTrabalho: TimeRange[]
 ): string[] => {
   // Recupera todos os agendamentos do localStorage
   const savedAppointments = localStorage.getItem('appointments');
@@ -23,8 +28,21 @@ export const getAvailableTimeSlots = (
     )
     .map(app => new Date(app.date).getHours() + ':00');
 
-  // Retorna apenas os horários disponíveis
-  return selectedBarberHorarios.filter(time => !occupiedTimeSlots.includes(time));
+  // Gera todos os horários disponíveis dentro dos intervalos de trabalho
+  const availableTimeSlots: string[] = [];
+  horariosTrabalho.forEach(range => {
+    const [startHour] = range.inicio.split(':').map(Number);
+    const [endHour] = range.fim.split(':').map(Number);
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+      if (!occupiedTimeSlots.includes(timeSlot)) {
+        availableTimeSlots.push(timeSlot);
+      }
+    }
+  });
+
+  return availableTimeSlots.sort();
 };
 
 export const createAppointment = (
