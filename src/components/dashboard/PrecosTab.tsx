@@ -41,10 +41,10 @@ export const PrecosTab = () => {
   });
 
   const adicionarServicoMutation = useMutation({
-    mutationFn: async (servico: Omit<Servico, 'id'>) => {
+    mutationFn: async (servico: Omit<Servico, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('servicos')
-        .insert([servico])
+        .insert([{ ...servico, created_at: new Date().toISOString() }])
         .select()
         .single();
 
