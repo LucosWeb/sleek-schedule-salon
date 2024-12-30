@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,90 @@ import { toast } from "sonner";
 import { Users, Plus, Trash2 } from "lucide-react";
 import { TimeRange, Barbeiro } from "./types/barber";
 import { BarbeiroHorarios } from "./BarbeiroHorarios";
+import { supabase } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const BarbeirosTab = () => {
-  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>(() => {
-    const saved = localStorage.getItem('barbeiros');
-    return saved ? JSON.parse(saved) : [];
-  });
   const [novoNome, setNovoNome] = useState("");
+  const queryClient = useQueryClient();
   
   const diasSemana = [
     "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"
   ];
+
+  const { data: barbeiros = [], isLoading } = useQuery({
+    queryKey: ['barbeiros'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('barbeiros')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        toast.error('Erro ao carregar barbeiros');
+        throw error;
+      }
+
+      return data || [];
+    }
+  });
+
+  const adicionarBarbeiroMutation = useMutation({
+    mutationFn: async (novoBarbeiro: Omit<Barbeiro, 'id'>) => {
+      const { data, error } = await supabase
+        .from('barbeiros')
+        .insert([novoBarbeiro])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['barbeiros'] });
+      toast.success("Barbeiro adicionado com sucesso!");
+      setNovoNome("");
+    },
+    onError: () => {
+      toast.error("Erro ao adicionar barbeiro");
+    }
+  });
+
+  const removerBarbeiroMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('barbeiros')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['barbeiros'] });
+      toast.success("Barbeiro removido com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao remover barbeiro");
+    }
+  });
+
+  const atualizarBarbeiroMutation = useMutation({
+    mutationFn: async (barbeiro: Barbeiro) => {
+      const { error } = await supabase
+        .from('barbeiros')
+        .update(barbeiro)
+        .eq('id', barbeiro.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['barbeiros'] });
+      toast.success("Barbeiro atualizado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar barbeiro");
+    }
+  });
 
   const adicionarBarbeiro = () => {
     if (!novoNome.trim()) {
@@ -26,77 +99,53 @@ export const BarbeirosTab = () => {
       return;
     }
 
-    const novoBarbeiro: Barbeiro = {
-      id: Date.now().toString(),
+    adicionarBarbeiroMutation.mutate({
       nome: novoNome,
       diasDisponiveis: [],
       horarios: []
-    };
-
-    const novosBarbeiros = [...barbeiros, novoBarbeiro];
-    setBarbeiros(novosBarbeiros);
-    localStorage.setItem('barbeiros', JSON.stringify(novosBarbeiros));
-    setNovoNome("");
-    toast.success("Barbeiro adicionado com sucesso!");
-  };
-
-  const removerBarbeiro = (id: string) => {
-    const novosBarbeiros = barbeiros.filter(b => b.id !== id);
-    setBarbeiros(novosBarbeiros);
-    localStorage.setItem('barbeiros', JSON.stringify(novosBarbeiros));
-    toast.success("Barbeiro removido com sucesso!");
+    });
   };
 
   const toggleDia = (barbeiroId: string, dia: string) => {
-    setBarbeiros(prevBarbeiros => {
-      const novosBarbeiros = prevBarbeiros.map(barbeiro => {
-        if (barbeiro.id === barbeiroId) {
-          const diasAtualizados = barbeiro.diasDisponiveis.includes(dia)
-            ? barbeiro.diasDisponiveis.filter(d => d !== dia)
-            : [...barbeiro.diasDisponiveis, dia];
-          return { ...barbeiro, diasDisponiveis: diasAtualizados };
-        }
-        return barbeiro;
-      });
-      localStorage.setItem('barbeiros', JSON.stringify(novosBarbeiros));
-      return novosBarbeiros;
+    const barbeiro = barbeiros.find(b => b.id === barbeiroId);
+    if (!barbeiro) return;
+
+    const diasAtualizados = barbeiro.diasDisponiveis.includes(dia)
+      ? barbeiro.diasDisponiveis.filter(d => d !== dia)
+      : [...barbeiro.diasDisponiveis, dia];
+
+    atualizarBarbeiroMutation.mutate({
+      ...barbeiro,
+      diasDisponiveis: diasAtualizados
     });
   };
 
   const adicionarHorario = (barbeiroId: string, novoHorario: TimeRange) => {
-    setBarbeiros(prevBarbeiros => {
-      const novosBarbeiros = prevBarbeiros.map(barbeiro => {
-        if (barbeiro.id === barbeiroId) {
-          return {
-            ...barbeiro,
-            horarios: [...barbeiro.horarios, novoHorario]
-          };
-        }
-        return barbeiro;
-      });
-      localStorage.setItem('barbeiros', JSON.stringify(novosBarbeiros));
-      return novosBarbeiros;
+    const barbeiro = barbeiros.find(b => b.id === barbeiroId);
+    if (!barbeiro) return;
+
+    atualizarBarbeiroMutation.mutate({
+      ...barbeiro,
+      horarios: [...barbeiro.horarios, novoHorario]
     });
-    
-    toast.success("Horário adicionado com sucesso!");
   };
 
   const removerHorario = (barbeiroId: string, index: number) => {
-    setBarbeiros(prevBarbeiros => {
-      const novosBarbeiros = prevBarbeiros.map(barbeiro => {
-        if (barbeiro.id === barbeiroId) {
-          const novosHorarios = [...barbeiro.horarios];
-          novosHorarios.splice(index, 1);
-          return { ...barbeiro, horarios: novosHorarios };
-        }
-        return barbeiro;
-      });
-      localStorage.setItem('barbeiros', JSON.stringify(novosBarbeiros));
-      return novosBarbeiros;
+    const barbeiro = barbeiros.find(b => b.id === barbeiroId);
+    if (!barbeiro) return;
+
+    const novosHorarios = [...barbeiro.horarios];
+    novosHorarios.splice(index, 1);
+
+    atualizarBarbeiroMutation.mutate({
+      ...barbeiro,
+      horarios: novosHorarios
     });
-    
-    toast.success("Horário removido com sucesso!");
   };
+
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -130,7 +179,7 @@ export const BarbeirosTab = () => {
               <Button
                 variant="destructive"
                 size="icon"
-                onClick={() => removerBarbeiro(barbeiro.id)}
+                onClick={() => removerBarbeiroMutation.mutate(barbeiro.id)}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>

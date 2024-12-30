@@ -5,39 +5,129 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-
-export interface Servico {
-  id: string;
-  nome: string;
-  preco: string;
-  duracao: string;
-  descricao: string;
-}
+import { supabase } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Servico } from "./types/servico";
 
 export const PrecosTab = () => {
   const { toast } = useToast();
-  const [servicos, setServicos] = useState<Servico[]>(() => {
-    const savedServicos = localStorage.getItem('servicos');
-    return savedServicos ? JSON.parse(savedServicos) : [];
-  });
-  
+  const queryClient = useQueryClient();
   const [novoServico, setNovoServico] = useState({
     nome: '',
     preco: '',
     duracao: '',
     descricao: ''
   });
-
   const [editandoServico, setEditandoServico] = useState<string | null>(null);
+
+  const { data: servicos = [], isLoading } = useQuery({
+    queryKey: ['servicos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('servicos')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        toast({
+          title: "Erro ao carregar serviços",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      return data || [];
+    }
+  });
+
+  const adicionarServicoMutation = useMutation({
+    mutationFn: async (servico: Omit<Servico, 'id'>) => {
+      const { data, error } = await supabase
+        .from('servicos')
+        .insert([servico])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicos'] });
+      setNovoServico({
+        nome: '',
+        preco: '',
+        duracao: '',
+        descricao: ''
+      });
+      toast({
+        title: "Serviço adicionado com sucesso!"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao adicionar serviço",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const atualizarServicoMutation = useMutation({
+    mutationFn: async (servico: Servico) => {
+      const { error } = await supabase
+        .from('servicos')
+        .update(servico)
+        .eq('id', servico.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicos'] });
+      setEditandoServico(null);
+      toast({
+        title: "Serviço atualizado com sucesso!"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao atualizar serviço",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const removerServicoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('servicos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicos'] });
+      toast({
+        title: "Serviço removido com sucesso!"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao remover serviço",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (editandoServico) {
-      setServicos(prev => prev.map(servico => 
-        servico.id === editandoServico 
-          ? { ...servico, [name]: value }
-          : servico
-      ));
+      const servicoAtual = servicos.find(s => s.id === editandoServico);
+      if (servicoAtual) {
+        atualizarServicoMutation.mutate({
+          ...servicoAtual,
+          [name]: value
+        });
+      }
     } else {
       setNovoServico(prev => ({
         ...prev,
@@ -56,60 +146,12 @@ export const PrecosTab = () => {
       return;
     }
 
-    const novoServicoCompleto = {
-      ...novoServico,
-      id: Date.now().toString()
-    };
-
-    const novosServicos = [...servicos, novoServicoCompleto];
-    setServicos(novosServicos);
-    localStorage.setItem('servicos', JSON.stringify(novosServicos));
-
-    setNovoServico({
-      nome: '',
-      preco: '',
-      duracao: '',
-      descricao: ''
-    });
-
-    toast({
-      title: "Serviço adicionado com sucesso!",
-      description: "O serviço foi adicionado à tabela de preços.",
-    });
+    adicionarServicoMutation.mutate(novoServico);
   };
 
-  const iniciarEdicao = (id: string) => {
-    setEditandoServico(id);
-  };
-
-  const salvarEdicao = () => {
-    localStorage.setItem('servicos', JSON.stringify(servicos));
-    setEditandoServico(null);
-    
-    toast({
-      title: "Serviço atualizado com sucesso!",
-      description: "As alterações foram salvas.",
-    });
-  };
-
-  const cancelarEdicao = () => {
-    const savedServicos = localStorage.getItem('servicos');
-    if (savedServicos) {
-      setServicos(JSON.parse(savedServicos));
-    }
-    setEditandoServico(null);
-  };
-
-  const removerServico = (id: string) => {
-    const novosServicos = servicos.filter(servico => servico.id !== id);
-    setServicos(novosServicos);
-    localStorage.setItem('servicos', JSON.stringify(novosServicos));
-
-    toast({
-      title: "Serviço removido com sucesso!",
-      description: "O serviço foi removido da tabela de preços.",
-    });
-  };
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -227,14 +269,14 @@ export const PrecosTab = () => {
                           <Button
                             variant="default"
                             size="icon"
-                            onClick={() => salvarEdicao()}
+                            onClick={() => setEditandoServico(null)}
                           >
                             ✓
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => cancelarEdicao()}
+                            onClick={() => setEditandoServico(null)}
                           >
                             ✕
                           </Button>
@@ -244,14 +286,14 @@ export const PrecosTab = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => iniciarEdicao(servico.id)}
+                            onClick={() => setEditandoServico(servico.id)}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="icon"
-                            onClick={() => removerServico(servico.id)}
+                            onClick={() => removerServicoMutation.mutate(servico.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

@@ -4,11 +4,12 @@ import { Clock, Users, Search, CheckCircle2, XCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Appointment } from "@/types/appointment";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface AgendaTabProps {
   date: Date | undefined;
@@ -17,38 +18,59 @@ interface AgendaTabProps {
 
 export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  
-  useEffect(() => {
-    const savedAppointments = localStorage.getItem('appointments');
-    if (savedAppointments) {
-      const parsed = JSON.parse(savedAppointments);
-      // Convert string dates back to Date objects
-      setAppointments(parsed.map((app: any) => ({
+  const queryClient = useQueryClient();
+
+  const { data: appointments = [], isLoading } = useQuery({
+    queryKey: ['appointments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agendamentos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast.error('Erro ao carregar agendamentos');
+        throw error;
+      }
+
+      return data.map(app => ({
         ...app,
         date: new Date(app.date)
-      })));
+      }));
     }
-  }, []);
+  });
+
+  const updateAppointmentMutation = useMutation({
+    mutationFn: async ({ appointmentId, newStatus }: { appointmentId: string, newStatus: 'Confirmado' | 'Cancelado' }) => {
+      const { error } = await supabase
+        .from('agendamentos')
+        .update({ status: newStatus })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success(`Status do agendamento atualizado com sucesso!`);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar status do agendamento');
+    }
+  });
 
   const updateAppointmentStatus = (appointmentId: string, newStatus: 'Confirmado' | 'Cancelado') => {
-    const updatedAppointments = appointments.map(app => {
-      if (app.id === appointmentId) {
-        return { ...app, status: newStatus };
-      }
-      return app;
-    });
-    
-    setAppointments(updatedAppointments);
-    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
-    toast.success(`Agendamento ${newStatus.toLowerCase()} com sucesso!`);
+    updateAppointmentMutation.mutate({ appointmentId, newStatus });
   };
-  
+
   const filteredAppointments = appointments.filter(appointment => {
     const matchesSearch = appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = !date || format(appointment.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
     return matchesSearch && matchesDate;
   });
+
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -117,10 +139,7 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
                   <TableCell>{appointment.clientName}</TableCell>
                   <TableCell>{appointment.service}</TableCell>
                   <TableCell>
-                    {localStorage.getItem('barbeiros') ? 
-                      JSON.parse(localStorage.getItem('barbeiros') || '[]')
-                        .find((b: any) => b.id === appointment.barberId)?.nome 
-                      : 'N/A'}
+                    {appointment.barberId}
                   </TableCell>
                   <TableCell>
                     {format(appointment.date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
