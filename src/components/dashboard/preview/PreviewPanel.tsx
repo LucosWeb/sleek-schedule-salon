@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ElementOrder } from "../types/customization";
-import { Servico } from "../PrecosTab";
+import { Servico } from "../types/servico";
 
 interface PreviewPanelProps {
   customization: {
