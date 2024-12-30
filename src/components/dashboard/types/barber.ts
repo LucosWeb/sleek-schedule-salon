@@ -2,6 +2,7 @@ export interface TimeRange {
   inicio: string;
   fim: string;
   tipo: 'trabalho' | 'almoco';
+  diaSemana?: string;
 }
 
 export interface Barbeiro {

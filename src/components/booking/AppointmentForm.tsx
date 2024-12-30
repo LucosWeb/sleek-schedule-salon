@@ -53,7 +53,7 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
     if (!barbeiro.diasDisponiveis.includes(diaSemana)) return [];
 
     const horariosTrabalho = barbeiro.horarios
-      .filter(h => h.tipo === 'trabalho')
+      .filter(h => h.tipo === 'trabalho' && h.diaSemana === diaSemana)
       .map(h => ({inicio: h.inicio, fim: h.fim}));
 
     return getAvailableTimeSlots(date, selectedBarbeiro, horariosTrabalho);
