@@ -9,6 +9,20 @@ interface ServiceSelectionProps {
 }
 
 export const ServiceSelection = ({ selectedService, setSelectedService, services }: ServiceSelectionProps) => {
+  if (!services || services.length === 0) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scissors className="w-5 h-5" />
+            Selecione o Serviço
+          </CardTitle>
+          <CardDescription>Nenhum serviço disponível no momento</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -25,7 +39,7 @@ export const ServiceSelection = ({ selectedService, setSelectedService, services
           </SelectTrigger>
           <SelectContent>
             {services.map((service) => (
-              <SelectItem key={service.id} value={service.id.toString()}>
+              <SelectItem key={service.id} value={service.id}>
                 <div className="flex justify-between items-center w-full">
                   <span>{service.nome}</span>
                   <span className="text-gray-500 text-sm">

@@ -25,21 +25,40 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
   const [selectedBarbeiro, setSelectedBarbeiro] = useState<string>("");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
-  const [barbeiros] = useState<Barbeiro[]>(() => {
-    const saved = localStorage.getItem('barbeiros');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [services] = useState<any[]>(() => {
-    const saved = localStorage.getItem('servicos');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
+  const [services, setServices] = useState<any[]>([]);
 
+  // Load data from localStorage when component mounts
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    if (currentUser) {
-      setClientName(currentUser.name);
-      setClientEmail(currentUser.email);
-    }
+    const loadData = () => {
+      try {
+        const savedBarbeiros = localStorage.getItem('barbeiros');
+        const savedServices = localStorage.getItem('servicos');
+        
+        if (savedBarbeiros) {
+          const parsedBarbeiros = JSON.parse(savedBarbeiros);
+          console.log('Loaded barbers:', parsedBarbeiros);
+          setBarbeiros(parsedBarbeiros);
+        }
+        
+        if (savedServices) {
+          const parsedServices = JSON.parse(savedServices);
+          console.log('Loaded services:', parsedServices);
+          setServices(parsedServices);
+        }
+
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (currentUser) {
+          setClientName(currentUser.name);
+          setClientEmail(currentUser.email);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error("Erro ao carregar dados. Por favor, recarregue a página.");
+      }
+    };
+
+    loadData();
   }, []);
 
   const getBarbeiroHorariosDisponiveis = () => {
@@ -59,7 +78,7 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
   };
 
   const isFormValid = () => {
-    return (
+    const valid = !!(
       date && 
       selectedTime && 
       selectedService && 
@@ -67,6 +86,16 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
       clientName && 
       clientEmail
     );
+    console.log('Form validation:', {
+      date,
+      selectedTime,
+      selectedService,
+      selectedBarbeiro,
+      clientName,
+      clientEmail,
+      isValid: valid
+    });
+    return valid;
   };
 
   const handleSubmit = () => {
@@ -75,19 +104,24 @@ export const AppointmentForm = ({ customization }: AppointmentFormProps) => {
       return;
     }
 
-    createAppointment(
-      clientName,
-      selectedService,
-      selectedBarbeiro,
-      date,
-      selectedTime,
-      clientEmail
-    );
+    try {
+      createAppointment(
+        clientName,
+        selectedService,
+        selectedBarbeiro,
+        date!,
+        selectedTime,
+        clientEmail
+      );
 
-    toast.success("Agendamento realizado com sucesso!");
-    
-    setSelectedTime("");
-    setSelectedService("");
+      toast.success("Agendamento realizado com sucesso!");
+      
+      setSelectedTime("");
+      setSelectedService("");
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast.error("Erro ao criar agendamento. Por favor, tente novamente.");
+    }
   };
 
   const availableTimeSlots = getBarbeiroHorariosDisponiveis();
