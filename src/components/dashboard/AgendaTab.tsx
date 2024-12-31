@@ -24,7 +24,7 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
     queryKey: ['appointments'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('agendamentos')
+        .from('appointments')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -35,7 +35,10 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
 
       return data.map(app => ({
         ...app,
-        date: new Date(app.date)
+        date: new Date(app.start_time),
+        clientName: app.client_id, // Temporariamente usando client_id como nome
+        service: app.service_id, // Temporariamente usando service_id como nome do serviço
+        status: app.status || 'Pendente'
       }));
     }
   });
@@ -43,7 +46,7 @@ export const AgendaTab = ({ date, setDate }: AgendaTabProps) => {
   const updateAppointmentMutation = useMutation({
     mutationFn: async ({ appointmentId, newStatus }: { appointmentId: string, newStatus: 'Confirmado' | 'Cancelado' }) => {
       const { error } = await supabase
-        .from('agendamentos')
+        .from('appointments')
         .update({ status: newStatus })
         .eq('id', appointmentId);
 
