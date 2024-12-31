@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -14,38 +15,46 @@ export const AuthForm = ({ mode, onSuccess }: AuthFormProps) => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simulando autenticação - em produção, isso seria integrado com um backend
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    if (mode === 'register') {
-      if (users.some((user: any) => user.email === email)) {
-        toast.error("Email já cadastrado");
-        return;
-      }
-      
-      users.push({
-        id: Date.now().toString(),
-        email,
-        password, // Em produção, isso seria hasheado
-        name,
-        phone
-      });
-      localStorage.setItem('users', JSON.stringify(users));
-      toast.success("Cadastro realizado com sucesso!");
-      onSuccess();
-    } else {
-      const user = users.find((u: any) => u.email === email && u.password === password);
-      if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        toast.success("Login realizado com sucesso!");
+    setLoading(true);
+
+    try {
+      if (mode === 'register') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+              phone,
+              role: 'client'
+            }
+          }
+        });
+
+        if (error) throw error;
+        
+        toast.success("Cadastro realizado com sucesso! Verifique seu email.");
         onSuccess();
       } else {
-        toast.error("Credenciais inválidas");
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+        
+        toast.success("Login realizado com sucesso!");
+        onSuccess();
       }
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      toast.error(error.message || "Erro ao processar sua solicitação");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,6 +79,7 @@ export const AuthForm = ({ mode, onSuccess }: AuthFormProps) => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -79,6 +89,7 @@ export const AuthForm = ({ mode, onSuccess }: AuthFormProps) => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
             </>
@@ -90,6 +101,7 @@ export const AuthForm = ({ mode, onSuccess }: AuthFormProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div>
@@ -99,10 +111,11 @@ export const AuthForm = ({ mode, onSuccess }: AuthFormProps) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
-          <Button type="submit" className="w-full">
-            {mode === 'login' ? 'Entrar' : 'Cadastrar'}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Processando...' : mode === 'login' ? 'Entrar' : 'Cadastrar'}
           </Button>
         </form>
       </CardContent>
