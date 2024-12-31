@@ -3,13 +3,52 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Scissors } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if user is already logged in
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return session;
+    }
+  });
+
+  // Redirect if already logged in
+  if (session) {
+    navigate('/dashboard');
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      toast.success("Login successful!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to login");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -21,9 +60,9 @@ const Login = () => {
               <Scissors className="w-6 h-6 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Bem-vindo de volta</CardTitle>
+          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
           <CardDescription className="text-center">
-            Entre para gerenciar sua barbearia
+            Sign in to manage your barbershop
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -32,27 +71,32 @@ const Login = () => {
               <label className="text-sm font-medium">Email</label>
               <Input 
                 type="email" 
-                placeholder="seu@email.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com" 
                 className="border-gray-200 focus:border-barber-primary focus:ring-barber-primary"
                 required 
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Senha</label>
+              <label className="text-sm font-medium">Password</label>
               <Input 
-                type="password" 
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="border-gray-200 focus:border-barber-primary focus:ring-barber-primary"
                 required 
               />
             </div>
             <Button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-barber-primary to-barber-primary/90 hover:from-barber-primary/90 hover:to-barber-primary text-white"
             >
-              Entrar
+              {isLoading ? "Signing in..." : "Sign in"}
             </Button>
             <div className="text-center text-sm text-gray-500">
-              <a href="#" className="hover:text-barber-primary">Esqueceu sua senha?</a>
+              <a href="#" className="hover:text-barber-primary">Forgot your password?</a>
             </div>
           </form>
         </CardContent>
