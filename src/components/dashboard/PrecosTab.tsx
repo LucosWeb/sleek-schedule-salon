@@ -24,7 +24,7 @@ export const PrecosTab = () => {
     queryKey: ['servicos'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('servicos')
+        .from('services')
         .select('*')
         .order('created_at', { ascending: true });
 
@@ -36,15 +36,28 @@ export const PrecosTab = () => {
         throw error;
       }
 
-      return data || [];
+      return data.map(service => ({
+        id: service.id,
+        nome: service.name,
+        preco: service.price.toString(),
+        duracao: service.duration.toString(),
+        descricao: service.description || '',
+        created_at: service.created_at
+      })) || [];
     }
   });
 
   const adicionarServicoMutation = useMutation({
     mutationFn: async (servico: Omit<Servico, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
-        .from('servicos')
-        .insert([{ ...servico, created_at: new Date().toISOString() }])
+        .from('services')
+        .insert([{
+          name: servico.nome,
+          price: parseFloat(servico.preco),
+          duration: parseInt(servico.duracao),
+          description: servico.descricao,
+          created_at: new Date().toISOString()
+        }])
         .select()
         .single();
 
@@ -74,8 +87,13 @@ export const PrecosTab = () => {
   const atualizarServicoMutation = useMutation({
     mutationFn: async (servico: Servico) => {
       const { error } = await supabase
-        .from('servicos')
-        .update(servico)
+        .from('services')
+        .update({
+          name: servico.nome,
+          price: parseFloat(servico.preco),
+          duration: parseInt(servico.duracao),
+          description: servico.descricao
+        })
         .eq('id', servico.id);
 
       if (error) throw error;
@@ -98,7 +116,7 @@ export const PrecosTab = () => {
   const removerServicoMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('servicos')
+        .from('services')
         .delete()
         .eq('id', id);
 
