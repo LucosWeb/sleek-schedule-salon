@@ -8,10 +8,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Service } from "./types/service";
+import { useNavigate } from "react-router-dom";
 
 export const ServicesTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [newService, setNewService] = useState({
     name: '',
     price: '',
@@ -20,8 +22,46 @@ export const ServicesTab = () => {
   });
   const [editingService, setEditingService] = useState<string | null>(null);
 
+  // Check if user is authenticated and has admin role
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return session;
+    }
+  });
+
+  // Fetch user profile to check role
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Redirect if not admin
+  if (session && profile && profile.role !== 'admin') {
+    toast({
+      title: "Unauthorized",
+      description: "You need admin privileges to manage services",
+      variant: "destructive"
+    });
+    navigate('/');
+    return null;
+  }
+
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['services'],
+    enabled: !!session && profile?.role === 'admin',
     queryFn: async () => {
       const { data, error } = await supabase
         .from('services')
@@ -31,6 +71,7 @@ export const ServicesTab = () => {
       if (error) {
         toast({
           title: "Error loading services",
+          description: error.message,
           variant: "destructive"
         });
         throw error;
@@ -69,9 +110,10 @@ export const ServicesTab = () => {
         title: "Service added successfully!"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error adding service",
+        description: error.message,
         variant: "destructive"
       });
     }
@@ -160,6 +202,11 @@ export const ServicesTab = () => {
     addServiceMutation.mutate(newService);
   };
 
+  if (!session) {
+    navigate('/login');
+    return null;
+  }
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -211,7 +258,7 @@ export const ServicesTab = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Price List</CardTitle>
+          <CardTitle>Services List</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
