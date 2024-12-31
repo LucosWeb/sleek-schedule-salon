@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Scissors } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -27,11 +27,12 @@ const Login = () => {
     }
   });
 
-  // Redirect if already logged in
-  if (session) {
-    navigate('/dashboard');
-    return null;
-  }
+  // Handle navigation in useEffect
+  useEffect(() => {
+    if (session) {
+      navigate('/dashboard');
+    }
+  }, [session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +73,11 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // If still checking session, don't render anything
+  if (session === undefined) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-barber-light to-white">
