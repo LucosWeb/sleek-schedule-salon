@@ -85,7 +85,7 @@ const Dashboard = () => {
           <TabsList className="grid w-full max-w-[800px] grid-cols-5">
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
-            <TabsTrigger value="precos">Tabela de Preços</TabsTrigger>
+            <TabsTrigger value="precos">Price List</TabsTrigger>
             <TabsTrigger value="barbeiros">Barbeiros</TabsTrigger>
             <TabsTrigger value="personalizacao">Personalização</TabsTrigger>
           </TabsList>

@@ -7,21 +7,21 @@ import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Servico } from "./types/servico";
+import { Service } from "./types/service";
 
-export const PrecosTab = () => {
+export const ServicesTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [novoServico, setNovoServico] = useState({
-    nome: '',
-    preco: '',
-    duracao: '',
-    descricao: ''
+  const [newService, setNewService] = useState({
+    name: '',
+    price: '',
+    duration: '',
+    description: ''
   });
-  const [editandoServico, setEditandoServico] = useState<string | null>(null);
+  const [editingService, setEditingService] = useState<string | null>(null);
 
-  const { data: servicos = [], isLoading } = useQuery({
-    queryKey: ['servicos'],
+  const { data: services = [], isLoading } = useQuery({
+    queryKey: ['services'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('services')
@@ -30,32 +30,25 @@ export const PrecosTab = () => {
 
       if (error) {
         toast({
-          title: "Erro ao carregar serviços",
+          title: "Error loading services",
           variant: "destructive"
         });
         throw error;
       }
 
-      return data.map(service => ({
-        id: service.id,
-        nome: service.name,
-        preco: service.price.toString(),
-        duracao: service.duration.toString(),
-        descricao: service.description || '',
-        created_at: service.created_at
-      })) || [];
+      return data || [];
     }
   });
 
-  const adicionarServicoMutation = useMutation({
-    mutationFn: async (servico: Omit<Servico, 'id' | 'created_at'>) => {
+  const addServiceMutation = useMutation({
+    mutationFn: async (service: Omit<Service, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('services')
         .insert([{
-          name: servico.nome,
-          price: parseFloat(servico.preco),
-          duration: parseInt(servico.duracao),
-          description: servico.descricao,
+          name: service.name,
+          price: parseFloat(service.price),
+          duration: parseInt(service.duration),
+          description: service.description,
           created_at: new Date().toISOString()
         }])
         .select()
@@ -65,55 +58,55 @@ export const PrecosTab = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['servicos'] });
-      setNovoServico({
-        nome: '',
-        preco: '',
-        duracao: '',
-        descricao: ''
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setNewService({
+        name: '',
+        price: '',
+        duration: '',
+        description: ''
       });
       toast({
-        title: "Serviço adicionado com sucesso!"
+        title: "Service added successfully!"
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao adicionar serviço",
+        title: "Error adding service",
         variant: "destructive"
       });
     }
   });
 
-  const atualizarServicoMutation = useMutation({
-    mutationFn: async (servico: Servico) => {
+  const updateServiceMutation = useMutation({
+    mutationFn: async (service: Service) => {
       const { error } = await supabase
         .from('services')
         .update({
-          name: servico.nome,
-          price: parseFloat(servico.preco),
-          duration: parseInt(servico.duracao),
-          description: servico.descricao
+          name: service.name,
+          price: parseFloat(service.price),
+          duration: parseInt(service.duration),
+          description: service.description
         })
-        .eq('id', servico.id);
+        .eq('id', service.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['servicos'] });
-      setEditandoServico(null);
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setEditingService(null);
       toast({
-        title: "Serviço atualizado com sucesso!"
+        title: "Service updated successfully!"
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao atualizar serviço",
+        title: "Error updating service",
         variant: "destructive"
       });
     }
   });
 
-  const removerServicoMutation = useMutation({
+  const removeServiceMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('services')
@@ -123,14 +116,14 @@ export const PrecosTab = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['servicos'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       toast({
-        title: "Serviço removido com sucesso!"
+        title: "Service removed successfully!"
       });
     },
     onError: () => {
       toast({
-        title: "Erro ao remover serviço",
+        title: "Error removing service",
         variant: "destructive"
       });
     }
@@ -138,163 +131,163 @@ export const PrecosTab = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (editandoServico) {
-      const servicoAtual = servicos.find(s => s.id === editandoServico);
-      if (servicoAtual) {
-        atualizarServicoMutation.mutate({
-          ...servicoAtual,
+    if (editingService) {
+      const currentService = services.find(s => s.id === editingService);
+      if (currentService) {
+        updateServiceMutation.mutate({
+          ...currentService,
           [name]: value
         });
       }
     } else {
-      setNovoServico(prev => ({
+      setNewService(prev => ({
         ...prev,
         [name]: value
       }));
     }
   };
 
-  const adicionarServico = () => {
-    if (!novoServico.nome || !novoServico.preco || !novoServico.duracao) {
+  const addService = () => {
+    if (!newService.name || !newService.price || !newService.duration) {
       toast({
-        title: "Erro ao adicionar serviço",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        title: "Error adding service",
+        description: "Please fill in all required fields.",
         variant: "destructive"
       });
       return;
     }
 
-    adicionarServicoMutation.mutate(novoServico);
+    addServiceMutation.mutate(newService);
   };
 
   if (isLoading) {
-    return <div>Carregando...</div>;
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Novo Serviço</CardTitle>
+          <CardTitle>Add New Service</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Input
-              placeholder="Nome do serviço"
-              name="nome"
-              value={novoServico.nome}
+              placeholder="Service name"
+              name="name"
+              value={newService.name}
               onChange={handleInputChange}
             />
             <Input
-              placeholder="Preço (R$)"
-              name="preco"
-              value={novoServico.preco}
-              onChange={handleInputChange}
-              type="number"
-            />
-            <Input
-              placeholder="Duração (min)"
-              name="duracao"
-              value={novoServico.duracao}
+              placeholder="Price ($)"
+              name="price"
+              value={newService.price}
               onChange={handleInputChange}
               type="number"
             />
             <Input
-              placeholder="Descrição (opcional)"
-              name="descricao"
-              value={novoServico.descricao}
+              placeholder="Duration (min)"
+              name="duration"
+              value={newService.duration}
+              onChange={handleInputChange}
+              type="number"
+            />
+            <Input
+              placeholder="Description (optional)"
+              name="description"
+              value={newService.description}
               onChange={handleInputChange}
             />
           </div>
           <Button 
-            onClick={adicionarServico}
+            onClick={addService}
             className="mt-4 w-full md:w-auto"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Adicionar Serviço
+            Add Service
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tabela de Preços</CardTitle>
+          <CardTitle>Price List</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Serviço</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Duração</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {servicos.map((servico) => (
-                <TableRow key={servico.id}>
+              {services.map((service) => (
+                <TableRow key={service.id}>
                   <TableCell>
-                    {editandoServico === servico.id ? (
+                    {editingService === service.id ? (
                       <Input
-                        name="nome"
-                        value={servico.nome}
+                        name="name"
+                        value={service.name}
                         onChange={handleInputChange}
                       />
                     ) : (
-                      servico.nome
+                      service.name
                     )}
                   </TableCell>
                   <TableCell>
-                    {editandoServico === servico.id ? (
+                    {editingService === service.id ? (
                       <Input
-                        name="preco"
-                        value={servico.preco}
+                        name="price"
+                        value={service.price}
                         onChange={handleInputChange}
                         type="number"
                       />
                     ) : (
-                      `R$ ${servico.preco}`
+                      `$ ${service.price}`
                     )}
                   </TableCell>
                   <TableCell>
-                    {editandoServico === servico.id ? (
+                    {editingService === service.id ? (
                       <Input
-                        name="duracao"
-                        value={servico.duracao}
+                        name="duration"
+                        value={service.duration}
                         onChange={handleInputChange}
                         type="number"
                       />
                     ) : (
-                      `${servico.duracao} min`
+                      `${service.duration} min`
                     )}
                   </TableCell>
                   <TableCell>
-                    {editandoServico === servico.id ? (
+                    {editingService === service.id ? (
                       <Input
-                        name="descricao"
-                        value={servico.descricao}
+                        name="description"
+                        value={service.description}
                         onChange={handleInputChange}
                       />
                     ) : (
-                      servico.descricao
+                      service.description
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      {editandoServico === servico.id ? (
+                      {editingService === service.id ? (
                         <>
                           <Button
                             variant="default"
                             size="icon"
-                            onClick={() => setEditandoServico(null)}
+                            onClick={() => setEditingService(null)}
                           >
                             ✓
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setEditandoServico(null)}
+                            onClick={() => setEditingService(null)}
                           >
                             ✕
                           </Button>
@@ -304,14 +297,14 @@ export const PrecosTab = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setEditandoServico(servico.id)}
+                            onClick={() => setEditingService(service.id)}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="icon"
-                            onClick={() => removerServicoMutation.mutate(servico.id)}
+                            onClick={() => removeServiceMutation.mutate(service.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
