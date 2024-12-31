@@ -38,6 +38,12 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      if (!email || !password) {
+        toast.error("Please enter both email and password");
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim()
@@ -46,7 +52,9 @@ const Login = () => {
       if (error) {
         console.error("Login error:", error);
         if (error.message === "Email logins are disabled") {
-          toast.error("Email login is not enabled. Please contact administrator.");
+          toast.error("Email authentication is not enabled in Supabase. Please contact administrator.");
+        } else if (error.message.includes("Invalid login credentials")) {
+          toast.error("Invalid email or password");
         } else {
           toast.error(error.message || "Failed to login");
         }
@@ -59,7 +67,7 @@ const Login = () => {
       }
     } catch (error: any) {
       console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
