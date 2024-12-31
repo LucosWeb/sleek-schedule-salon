@@ -19,7 +19,10 @@ const Login = () => {
     queryKey: ['session'],
     queryFn: async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
+      if (error) {
+        console.error("Session check error:", error);
+        return null;
+      }
       return session;
     }
   });
@@ -36,16 +39,27 @@ const Login = () => {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: email.trim(),
+        password: password.trim()
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        if (error.message === "Email logins are disabled") {
+          toast.error("Email login is not enabled. Please contact administrator.");
+        } else {
+          toast.error(error.message || "Failed to login");
+        }
+        return;
+      }
 
-      toast.success("Login successful!");
-      navigate("/dashboard");
+      if (data?.user) {
+        toast.success("Login successful!");
+        navigate("/dashboard");
+      }
     } catch (error: any) {
-      toast.error(error.message || "Failed to login");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
